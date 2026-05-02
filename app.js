@@ -1,4 +1,5 @@
-
+document.body.style.background = "white";
+document.body.innerHTML = "<h1>JS is working</h1>";
 base_dir = "/mnt/agents/output/vezaraa"
 
 # Create the main app.js - Part 1
