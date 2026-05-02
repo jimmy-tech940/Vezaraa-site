@@ -1332,3 +1332,1329 @@ with open(f"{base_dir}/app.js", "a") as f:
 
 print("app.js Part 3 created successfully!")
 print(f"Size: {len(app_js_part3)} characters")
+
+base_dir = "/mnt/agents/output/vezaraa"
+
+# Part 4: Shop Page, Product Page (smaller chunk)
+app_js_part4 = '''
+const renderShopPage = () => {
+    const products = getFilteredProducts();
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="bg-midnight-navy py-12 lg:py-16">
+                <div class="w-full px-4 sm:px-6 lg:px-12">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                        <div>
+                            <nav class="flex items-center gap-2 text-white/40 text-sm mb-4">
+                                <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('home'); return false;">Home</a>
+                                <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                                <span class="text-white/60">Shop</span>
+                            </nav>
+                            <h1 class="font-display text-4xl lg:text-5xl font-bold text-white">
+                                ${State.filters.category === 'all' ? 'All Products' : State.filters.category === 'men' ? 'Men' : State.filters.category === 'women' ? 'Women' : State.filters.category === 'new-arrivals' ? 'New Arrivals' : 'Limited Edition'}
+                            </h1>
+                            <p class="text-white/50 mt-2">${products.length} products</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select class="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold/50"
+                                    onchange="setSortBy(this.value)">
+                                <option value="featured" ${State.filters.sortBy === 'featured' ? 'selected' : ''}>Featured</option>
+                                <option value="price-low" ${State.filters.sortBy === 'price-low' ? 'selected' : ''}>Price: Low to High</option>
+                                <option value="price-high" ${State.filters.sortBy === 'price-high' ? 'selected' : ''}>Price: High to Low</option>
+                                <option value="rating" ${State.filters.sortBy === 'rating' ? 'selected' : ''}>Highest Rated</option>
+                                <option value="newest" ${State.filters.sortBy === 'newest' ? 'selected' : ''}>Newest</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+                <div class="flex gap-8">
+                    <aside class="hidden lg:block w-64 flex-shrink-0">
+                        <div class="sticky top-24 space-y-8">
+                            <div>
+                                <h3 class="text-midnight-navy dark:text-white font-semibold mb-4">Categories</h3>
+                                <div class="space-y-2">
+                                    ${[ {id:'all',name:'All Products'},{id:'men',name:'Men'},{id:'women',name:'Women'},{id:'new-arrivals',name:'New Arrivals'},{id:'limited',name:'Limited Edition'} ].map(cat => `
+                                        <button class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${State.filters.category === cat.id ? 'bg-gold/10 text-gold font-medium' : 'text-midnight-navy/60 dark:text-white/60 hover:bg-white/5'}"
+                                                onclick="setCategory('${cat.id}')">${cat.name}</button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-midnight-navy dark:text-white font-semibold mb-4">Price Range</h3>
+                                <div class="px-2">
+                                    <input type="range" min="0" max="5000" value="${State.filters.priceRange[1]}" class="w-full accent-gold"
+                                           oninput="setPriceRange(0, this.value)">
+                                    <div class="flex justify-between text-sm text-midnight-navy/60 dark:text-white/60 mt-2">
+                                        <span>$0</span><span>$${State.filters.priceRange[1]}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-midnight-navy dark:text-white font-semibold mb-4">Sizes</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    ${['XS','S','M','L','XL','XXL','7','8','9','10','11'].map(size => `
+                                        <button class="w-10 h-10 rounded-lg border text-sm transition-colors ${State.filters.sizes.includes(size) ? 'bg-gold border-gold text-midnight-navy' : 'border-midnight-navy/20 dark:border-white/20 text-midnight-navy/60 dark:text-white/60 hover:border-gold hover:text-gold'}"
+                                                onclick="toggleSizeFilter('${size}')">${size}</button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <button class="w-full py-2.5 border border-midnight-navy/20 dark:border-white/20 text-midnight-navy dark:text-white rounded-lg text-sm hover:bg-midnight-navy/5 dark:hover:bg-white/5 transition-colors"
+                                    onclick="resetFilters()">Reset Filters</button>
+                        </div>
+                    </aside>
+                    <div class="flex-1">
+                        ${products.length === 0 ? `
+                            <div class="text-center py-20">
+                                <i data-lucide="package-x" class="w-16 h-16 text-midnight-navy/20 dark:text-white/20 mx-auto mb-4"></i>
+                                <p class="text-midnight-navy/40 dark:text-white/40 text-lg">No products found</p>
+                                <button class="mt-4 text-gold hover:underline" onclick="resetFilters()">Clear all filters</button>
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                                ${products.map(product => renderProductCard(product)).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderProductPage = () => {
+    const product = State.currentProduct;
+    if (!product) return navigateTo('shop');
+    const currentImage = product.images[State.productImageIndex];
+    const recommended = getRecommendedProducts(product.id);
+    const inWishlist = isInWishlist(product.id);
+    
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-6">
+                <nav class="flex items-center gap-2 text-midnight-navy/40 dark:text-white/40 text-sm">
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('home'); return false;">Home</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('shop'); return false;">Shop</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span class="text-midnight-navy dark:text-white">${product.name}</span>
+                </nav>
+            </div>
+            <div class="w-full px-4 sm:px-6 lg:px-12 pb-16">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16">
+                    <div class="space-y-4">
+                        <div class="relative rounded-2xl overflow-hidden bg-platinum dark:bg-midnight-navy-light aspect-[3/4] group">
+                            <img src="${currentImage}" alt="${product.name}" class="w-full h-full object-cover transition-transform duration-500 ${State.isZoomed ? 'scale-150' : 'scale-100'}"
+                                 style="${State.isZoomed ? `transform-origin: ${State.zoomPosition.x}% ${State.zoomPosition.y}%` : ''}"
+                                 onmousemove="handleZoom(event, this)" onmouseenter="enableZoom()" onmouseleave="disableZoom()">
+                            ${product.isLimited ? `<div class="absolute top-4 left-4"><span class="px-3 py-1.5 bg-gold text-midnight-navy text-xs font-bold rounded-full">Limited Edition</span></div>` : ''}
+                            <button class="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-midnight-navy hover:bg-gold transition-colors"
+                                    onclick="toggleWishlist(getProductById('${product.id}'))">
+                                <i data-lucide="heart" class="w-5 h-5 ${inWishlist ? 'fill-red-500 text-red-500' : ''}"></i>
+                            </button>
+                            <button class="absolute bottom-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-midnight-navy text-sm font-medium hover:bg-gold transition-colors flex items-center gap-2"
+                                    onclick="toggle360View()">
+                                <i data-lucide="rotate-3d" class="w-4 h-4"></i>${State.is360View ? 'Standard View' : '360 View'}
+                            </button>
+                        </div>
+                        <div class="flex gap-3 overflow-x-auto hide-scrollbar">
+                            ${product.images.map((img, i) => `
+                                <button class="flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-colors ${i === State.productImageIndex ? 'border-gold' : 'border-transparent'}"
+                                        onclick="setProductImage(${i})">
+                                    <img src="${img}" alt="${product.name}" class="w-full h-full object-cover">
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="lg:sticky lg:top-24 lg:self-start">
+                        <div class="mb-2">${product.badge ? `<span class="text-gold text-xs uppercase tracking-widest font-medium">${product.badge}</span>` : ''}</div>
+                        <h1 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-3">${product.name}</h1>
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="flex items-center gap-1">
+                                ${Array(5).fill(0).map((_, i) => `<i data-lucide="star" class="w-4 h-4 ${i < Math.floor(product.rating) ? 'text-gold fill-gold' : 'text-midnight-navy/20 dark:text-white/20'}"></i>`).join('')}
+                            </div>
+                            <span class="text-midnight-navy/60 dark:text-white/60 text-sm">${product.rating} (${product.reviewCount} reviews)</span>
+                        </div>
+                        <div class="flex items-center gap-3 mb-8">
+                            <span class="text-3xl font-bold text-gold">${formatPrice(product.price)}</span>
+                            ${product.originalPrice ? `<span class="text-xl text-midnight-navy/40 dark:text-white/40 line-through">${formatPrice(product.originalPrice)}</span>` : ''}
+                        </div>
+                        <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed mb-8">${product.description}</p>
+                        <div class="mb-6">
+                            <label class="text-midnight-navy dark:text-white font-medium text-sm mb-3 block">Color: <span class="text-midnight-navy/60 dark:text-white/60">${State.selectedColor?.name || product.colors[0].name}</span></label>
+                            <div class="flex gap-3">
+                                ${product.colors.map(color => `
+                                    <button class="color-variant w-10 h-10 rounded-full border-2 transition-all ${(State.selectedColor?.name || product.colors[0].name) === color.name ? 'selected' : 'border-midnight-navy/20 dark:border-white/20'}"
+                                            style="background-color: ${color.hex}" onclick="selectColor({name:'${color.name}',hex:'${color.hex}'})"></button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-midnight-navy dark:text-white font-medium text-sm">Size</label>
+                                <button class="text-gold text-sm hover:underline" onclick="showSizeGuide()">Size Guide</button>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${product.sizes.map(size => `
+                                    <button class="size-option w-12 h-12 rounded-lg border text-sm font-medium transition-colors ${product.sizesAvailable.includes(size) ? (State.selectedSize === size ? 'selected' : 'border-midnight-navy/20 dark:border-white/20 text-midnight-navy dark:text-white') : 'disabled border-midnight-navy/10 dark:border-white/10 text-midnight-navy/30 dark:text-white/30'}"
+                                            onclick="${product.sizesAvailable.includes(size) ? `selectSize('${size}')` : ''}">${size}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mb-8">
+                            <button class="flex-1 py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-all hover:scale-[1.02] flex items-center justify-center gap-2" onclick="addProductToCart()">
+                                <i data-lucide="shopping-bag" class="w-5 h-5"></i>Add to Cart
+                            </button>
+                            <button class="flex-1 py-4 border-2 border-midnight-navy dark:border-white text-midnight-navy dark:text-white font-bold rounded-full hover:bg-midnight-navy hover:text-white dark:hover:bg-white dark:hover:text-midnight-navy transition-all" onclick="buyNow()">Buy Now</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 p-4 bg-platinum dark:bg-midnight-navy-light rounded-xl mb-8">
+                            <div class="flex items-center gap-3"><i data-lucide="truck" class="w-5 h-5 text-gold"></i><div><p class="text-midnight-navy dark:text-white text-sm font-medium">Free Shipping</p><p class="text-midnight-navy/50 dark:text-white/50 text-xs">Orders over $500</p></div></div>
+                            <div class="flex items-center gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-gold"></i><div><p class="text-midnight-navy dark:text-white text-sm font-medium">Authentic</p><p class="text-midnight-navy/50 dark:text-white/50 text-xs">Certificate included</p></div></div>
+                            <div class="flex items-center gap-3"><i data-lucide="refresh-cw" class="w-5 h-5 text-gold"></i><div><p class="text-midnight-navy dark:text-white text-sm font-medium">Easy Returns</p><p class="text-midnight-navy/50 dark:text-white/50 text-xs">30-day policy</p></div></div>
+                            <div class="flex items-center gap-3"><i data-lucide="headphones" class="w-5 h-5 text-gold"></i><div><p class="text-midnight-navy dark:text-white text-sm font-medium">24/7 Support</p><p class="text-midnight-navy/50 dark:text-white/50 text-xs">Style consultants</p></div></div>
+                        </div>
+                        <div class="border-b border-midnight-navy/10 dark:border-white/10 mb-6">
+                            <div class="flex gap-6">
+                                ${['description','details','reviews'].map(tab => `
+                                    <button class="pb-3 text-sm font-medium transition-colors relative ${State.activeTab === tab ? 'text-gold' : 'text-midnight-navy/50 dark:text-white/50 hover:text-midnight-navy dark:hover:text-white'}"
+                                            onclick="setActiveTab('${tab}')">${tab.charAt(0).toUpperCase()+tab.slice(1)}${State.activeTab === tab ? '<div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gold"></div>' : ''}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="animate-fade-in">
+                            ${State.activeTab === 'description' ? `<p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed">${product.description}</p>`
+                              : State.activeTab === 'details' ? `<div class="space-y-4"><div><h4 class="text-midnight-navy dark:text-white font-medium mb-1">Material</h4><p class="text-midnight-navy/60 dark:text-white/60 text-sm">${product.material}</p></div><div><h4 class="text-midnight-navy dark:text-white font-medium mb-1">Care Instructions</h4><p class="text-midnight-navy/60 dark:text-white/60 text-sm">${product.care}</p></div><div><h4 class="text-midnight-navy dark:text-white font-medium mb-1">SKU</h4><p class="text-midnight-navy/60 dark:text-white/60 text-sm">${product.id.toUpperCase()}</p></div></div>`
+                              : `<div class="space-y-6">${REVIEWS.filter(r => r.product === product.name).map(review => `<div class="border-b border-midnight-navy/10 dark:border-white/10 pb-6"><div class="flex items-center gap-3 mb-3"><img src="${review.avatar}" alt="${review.user}" class="w-10 h-10 rounded-full object-cover"><div><p class="text-midnight-navy dark:text-white font-medium text-sm">${review.user}</p><p class="text-midnight-navy/40 dark:text-white/40 text-xs">${review.date}</p></div><div class="ml-auto flex gap-0.5">${Array(5).fill(0).map((_, i) => `<i data-lucide="star" class="w-3 h-3 ${i < review.rating ? 'text-gold fill-gold' : 'text-midnight-navy/20 dark:text-white/20'}"></i>`).join('')}</div></div><p class="text-midnight-navy/70 dark:text-white/70 text-sm">${review.text}</p></div>`).join('')}${REVIEWS.filter(r => r.product === product.name).length === 0 ? `<p class="text-midnight-navy/40 dark:text-white/40 text-center py-8">No reviews yet. Be the first to review!</p>` : ''}</div>`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-16 border-t border-midnight-navy/10 dark:border-white/10">
+                <h2 class="font-display text-2xl lg:text-3xl font-bold text-midnight-navy dark:text-white mb-8">You May Also Like</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">${recommended.map(product => renderProductCard(product)).join('')}</div>
+            </div>
+        </div>
+    `;
+};
+'''
+
+with open(f"{base_dir}/app.js", "a") as f:
+    f.write(app_js_part4)
+
+print("app.js Part 4 created successfully!")
+print(f"Size: {len(app_js_part4)} characters")
+base_dir = "/mnt/agents/output/vezaraa"
+
+# Part 5: Checkout Page, Wishlist Page, Account Pages, About, Blog, Contact, FAQ, Returns
+app_js_part5 = '''
+const renderCheckoutPage = () => {
+    if (State.cart.length === 0) {
+        return `
+            <div class="page-transition page-active pt-20 lg:pt-24 min-h-[60vh] flex items-center justify-center">
+                <div class="text-center">
+                    <i data-lucide="shopping-bag" class="w-20 h-20 text-midnight-navy/10 dark:text-white/10 mx-auto mb-6"></i>
+                    <h2 class="font-display text-3xl font-bold text-midnight-navy dark:text-white mb-4">Your cart is empty</h2>
+                    <p class="text-midnight-navy/50 dark:text-white/50 mb-8">Add some items to proceed with checkout</p>
+                    <button class="px-8 py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="navigateTo('shop')">Continue Shopping</button>
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+                <nav class="flex items-center gap-2 text-midnight-navy/40 dark:text-white/40 text-sm mb-8">
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('home'); return false;">Home</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('shop'); return false;">Shop</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span class="text-midnight-navy dark:text-white">Checkout</span>
+                </nav>
+                
+                <h1 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-8">Checkout</h1>
+                
+                <!-- Progress Steps -->
+                <div class="flex items-center gap-4 mb-12 max-w-2xl">
+                    ${[1,2,3].map(step => `
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${State.checkoutStep >= step ? 'bg-gold text-midnight-navy' : 'bg-midnight-navy/10 dark:bg-white/10 text-midnight-navy/40 dark:text-white/40'}">
+                                ${State.checkoutStep > step ? '<i data-lucide="check" class="w-5 h-5"></i>' : step}
+                            </div>
+                            <span class="text-sm font-medium ${State.checkoutStep >= step ? 'text-midnight-navy dark:text-white' : 'text-midnight-navy/40 dark:text-white/40'}">${step === 1 ? 'Shipping' : step === 2 ? 'Payment' : 'Review'}</span>
+                            ${step < 3 ? `<div class="flex-1 h-px ${State.checkoutStep > step ? 'bg-gold' : 'bg-midnight-navy/10 dark:bg-white/10'}"></div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="grid lg:grid-cols-3 gap-12">
+                    <div class="lg:col-span-2">
+                        ${State.checkoutStep === 1 ? `
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-6">Shipping Information</h2>
+                                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">First Name</label><input type="text" id="ship-firstname" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="John"></div>
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Last Name</label><input type="text" id="ship-lastname" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="Doe"></div>
+                                </div>
+                                <div class="mb-4"><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Email</label><input type="email" id="ship-email" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="john@example.com"></div>
+                                <div class="mb-4"><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Phone</label><input type="tel" id="ship-phone" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="+1 234 567 8900"></div>
+                                <div class="mb-4"><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Address</label><input type="text" id="ship-address" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="123 Fashion Street"></div>
+                                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">City</label><input type="text" id="ship-city" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="New York"></div>
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">State</label><input type="text" id="ship-state" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="NY"></div>
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">ZIP Code</label><input type="text" id="ship-zip" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="10001"></div>
+                                </div>
+                                <div class="mb-6"><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Country</label>
+                                    <select id="ship-country" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50">
+                                        ${COUNTRIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                                    </select>
+                                </div>
+                                
+                                <h3 class="font-display text-lg font-bold text-midnight-navy dark:text-white mb-4">Shipping Method</h3>
+                                <div class="space-y-3 mb-8">
+                                    ${SHIPPING_OPTIONS.map(opt => `
+                                        <label class="flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${State.shippingMethod === opt.id ? 'border-gold bg-gold/5' : 'border-midnight-navy/10 dark:border-white/10 hover:border-midnight-navy/30 dark:hover:border-white/30'}">
+                                            <input type="radio" name="shipping" value="${opt.id}" class="hidden" ${State.shippingMethod === opt.id ? 'checked' : ''} onchange="setShippingMethod('${opt.id}')">
+                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center ${State.shippingMethod === opt.id ? 'border-gold' : 'border-midnight-navy/30 dark:border-white/30'}">
+                                                ${State.shippingMethod === opt.id ? '<div class="w-2.5 h-2.5 rounded-full bg-gold"></div>' : ''}
+                                            </div>
+                                            <div class="flex-1">
+                                                <p class="text-midnight-navy dark:text-white font-medium text-sm">${opt.name}</p>
+                                                <p class="text-midnight-navy/50 dark:text-white/50 text-xs">${opt.time}</p>
+                                            </div>
+                                            <span class="text-gold font-semibold">${opt.price === 0 ? 'Free' : formatPrice(opt.price)}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                                
+                                <button class="w-full py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="nextCheckoutStep()">Continue to Payment</button>
+                            </div>
+                        ` : State.checkoutStep === 2 ? `
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-6">Payment Method</h2>
+                                <div class="space-y-3 mb-8">
+                                    ${PAYMENT_METHODS.map(method => `
+                                        <label class="flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${State.paymentMethod === method.id ? 'border-gold bg-gold/5' : 'border-midnight-navy/10 dark:border-white/10 hover:border-midnight-navy/30 dark:hover:border-white/30'}">
+                                            <input type="radio" name="payment" value="${method.id}" class="hidden" ${State.paymentMethod === method.id ? 'checked' : ''} onchange="setPaymentMethod('${method.id}')">
+                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center ${State.paymentMethod === method.id ? 'border-gold' : 'border-midnight-navy/30 dark:border-white/30'}">
+                                                ${State.paymentMethod === method.id ? '<div class="w-2.5 h-2.5 rounded-full bg-gold"></div>' : ''}
+                                            </div>
+                                            <i data-lucide="${method.icon}" class="w-5 h-5 text-midnight-navy dark:text-white"></i>
+                                            <span class="text-midnight-navy dark:text-white font-medium text-sm">${method.name}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                                
+                                ${State.paymentMethod === 'card' ? `
+                                    <div class="space-y-4 mb-8">
+                                        <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Card Number</label>
+                                            <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="4242 4242 4242 4242"></div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Expiry Date</label>
+                                                <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="MM/YY"></div>
+                                            <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">CVV</label>
+                                                <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="123"></div>
+                                        </div>
+                                        <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Cardholder Name</label>
+                                            <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="John Doe"></div>
+                                    </div>
+                                ` : State.paymentMethod === 'upi' ? `
+                                    <div class="mb-8">
+                                        <label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">UPI ID</label>
+                                        <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="yourname@upi">
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="flex gap-4">
+                                    <button class="flex-1 py-4 border-2 border-midnight-navy/20 dark:border-white/20 text-midnight-navy dark:text-white font-semibold rounded-full hover:bg-midnight-navy/5 dark:hover:bg-white/5 transition-colors" onclick="prevCheckoutStep()">Back</button>
+                                    <button class="flex-1 py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="nextCheckoutStep()">Review Order</button>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-6">Order Review</h2>
+                                <div class="space-y-4 mb-8">
+                                    ${State.cart.map(item => `
+                                        <div class="flex gap-4 p-4 bg-platinum dark:bg-midnight-navy rounded-xl">
+                                            <img src="${item.image}" alt="${item.name}" class="w-16 h-20 object-cover rounded-lg">
+                                            <div class="flex-1">
+                                                <h4 class="text-midnight-navy dark:text-white font-medium text-sm">${item.name}</h4>
+                                                <p class="text-midnight-navy/50 dark:text-white/50 text-xs">${item.color} / ${item.size}</p>
+                                                <p class="text-gold text-sm font-semibold mt-1">${formatPrice(item.price)} x ${item.quantity}</p>
+                                            </div>
+                                            <p class="text-midnight-navy dark:text-white font-semibold">${formatPrice(item.price * item.quantity)}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <div class="border-t border-midnight-navy/10 dark:border-white/10 pt-6 mb-8">
+                                    <div class="flex justify-between mb-2"><span class="text-midnight-navy/60 dark:text-white/60">Subtotal</span><span class="text-midnight-navy dark:text-white">${formatPrice(getCartTotal())}</span></div>
+                                    <div class="flex justify-between mb-2"><span class="text-midnight-navy/60 dark:text-white/60">Shipping</span><span class="text-midnight-navy dark:text-white">${getShippingCost() === 0 ? 'Free' : formatPrice(getShippingCost())}</span></div>
+                                    <div class="flex justify-between mb-2"><span class="text-midnight-navy/60 dark:text-white/60">Tax</span><span class="text-midnight-navy dark:text-white">${formatPrice(getTax())}</span></div>
+                                    ${State.couponApplied ? `<div class="flex justify-between mb-2"><span class="text-gold">Discount</span><span class="text-gold">-${formatPrice(getCartTotal() * State.couponDiscount)}</span></div>` : ''}
+                                    <div class="flex justify-between pt-4 border-t border-midnight-navy/10 dark:border-white/10">
+                                        <span class="text-midnight-navy dark:text-white font-bold text-lg">Total</span>
+                                        <span class="text-gold font-bold text-xl">${formatPrice(getFinalTotal() + getTax())}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center gap-3 p-4 bg-green-500/10 rounded-xl mb-8">
+                                    <i data-lucide="shield-check" class="w-5 h-5 text-green-500"></i>
+                                    <p class="text-green-600 dark:text-green-400 text-sm">Your payment information is secure and encrypted</p>
+                                </div>
+                                
+                                <div class="flex gap-4">
+                                    <button class="flex-1 py-4 border-2 border-midnight-navy/20 dark:border-white/20 text-midnight-navy dark:text-white font-semibold rounded-full hover:bg-midnight-navy/5 dark:hover:bg-white/5 transition-colors" onclick="prevCheckoutStep()">Back</button>
+                                    <button class="flex-1 py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="completeOrder()">Place Order</button>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                    
+                    <!-- Order Summary Sidebar -->
+                    <div class="lg:sticky lg:top-24 lg:self-start">
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <h3 class="font-display text-lg font-bold text-midnight-navy dark:text-white mb-4">Order Summary</h3>
+                            <div class="space-y-3 mb-6">
+                                ${State.cart.map(item => `
+                                    <div class="flex gap-3">
+                                        <img src="${item.image}" alt="${item.name}" class="w-12 h-16 object-cover rounded-lg">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-midnight-navy dark:text-white text-sm font-medium truncate">${item.name}</p>
+                                            <p class="text-midnight-navy/50 dark:text-white/50 text-xs">Qty: ${item.quantity}</p>
+                                        </div>
+                                        <p class="text-gold text-sm font-semibold">${formatPrice(item.price * item.quantity)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="border-t border-midnight-navy/10 dark:border-white/10 pt-4 space-y-2">
+                                <div class="flex justify-between text-sm"><span class="text-midnight-navy/60 dark:text-white/60">Subtotal</span><span class="text-midnight-navy dark:text-white">${formatPrice(getCartTotal())}</span></div>
+                                <div class="flex justify-between text-sm"><span class="text-midnight-navy/60 dark:text-white/60">Shipping</span><span class="text-midnight-navy dark:text-white">${getShippingCost() === 0 ? 'Free' : formatPrice(getShippingCost())}</span></div>
+                                <div class="flex justify-between text-sm"><span class="text-midnight-navy/60 dark:text-white/60">Tax</span><span class="text-midnight-navy dark:text-white">${formatPrice(getTax())}</span></div>
+                                ${State.couponApplied ? `<div class="flex justify-between text-sm"><span class="text-gold">Discount</span><span class="text-gold">-${formatPrice(getCartTotal() * State.couponDiscount)}</span></div>` : ''}
+                                <div class="flex justify-between pt-3 border-t border-midnight-navy/10 dark:border-white/10">
+                                    <span class="text-midnight-navy dark:text-white font-bold">Total</span>
+                                    <span class="text-gold font-bold text-lg">${formatPrice(getFinalTotal() + getTax())}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderWishlistPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+                <nav class="flex items-center gap-2 text-midnight-navy/40 dark:text-white/40 text-sm mb-8">
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('home'); return false;">Home</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span class="text-midnight-navy dark:text-white">Wishlist</span>
+                </nav>
+                
+                <h1 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-2">My Wishlist</h1>
+                <p class="text-midnight-navy/50 dark:text-white/50 mb-8">${State.wishlist.length} items saved</p>
+                
+                ${State.wishlist.length === 0 ? `
+                    <div class="text-center py-20">
+                        <i data-lucide="heart" class="w-16 h-16 text-midnight-navy/10 dark:text-white/10 mx-auto mb-4"></i>
+                        <p class="text-midnight-navy/40 dark:text-white/40 text-lg mb-2">Your wishlist is empty</p>
+                        <p class="text-midnight-navy/30 dark:text-white/30 text-sm mb-6">Save items you love for later</p>
+                        <button class="px-8 py-3 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="navigateTo('shop')">Explore Products</button>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${State.wishlist.map(item => {
+                            const product = getProductById(item.id);
+                            return product ? renderProductCard(product) : '';
+                        }).join('')}
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+};
+
+const renderAccountPage = () => {
+    if (!State.user) {
+        return `
+            <div class="page-transition page-active pt-20 lg:pt-24 min-h-[60vh] flex items-center justify-center">
+                <div class="text-center">
+                    <i data-lucide="user" class="w-16 h-16 text-midnight-navy/10 dark:text-white/10 mx-auto mb-4"></i>
+                    <h2 class="font-display text-2xl font-bold text-midnight-navy dark:text-white mb-4">Please Sign In</h2>
+                    <p class="text-midnight-navy/50 dark:text-white/50 mb-6">Sign in to view your account dashboard</p>
+                    <button class="px-8 py-3 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="toggleLogin()">Sign In</button>
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+                <h1 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-8">My Account</h1>
+                
+                <div class="grid lg:grid-cols-4 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center">
+                                    <span class="font-display text-xl font-bold text-gold">${State.user.name.charAt(0)}</span>
+                                </div>
+                                <div>
+                                    <p class="text-midnight-navy dark:text-white font-semibold">${State.user.name}</p>
+                                    <p class="text-midnight-navy/50 dark:text-white/50 text-sm">${State.user.email}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <button class="w-full flex items-center gap-3 p-3 rounded-lg bg-gold/10 text-gold font-medium text-left text-sm">
+                                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard
+                                </button>
+                                <button class="w-full flex items-center gap-3 p-3 rounded-lg text-midnight-navy/60 dark:text-white/60 hover:bg-white/5 text-left text-sm transition-colors" onclick="navigateTo('orders')">
+                                    <i data-lucide="package" class="w-4 h-4"></i>Orders
+                                </button>
+                                <button class="w-full flex items-center gap-3 p-3 rounded-lg text-midnight-navy/60 dark:text-white/60 hover:bg-white/5 text-left text-sm transition-colors" onclick="navigateTo('wishlist')">
+                                    <i data-lucide="heart" class="w-4 h-4"></i>Wishlist
+                                </button>
+                                <button class="w-full flex items-center gap-3 p-3 rounded-lg text-midnight-navy/60 dark:text-white/60 hover:bg-white/5 text-left text-sm transition-colors" onclick="navigateTo('addresses')">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>Addresses
+                                </button>
+                                <button class="w-full flex items-center gap-3 p-3 rounded-lg text-red-400 hover:bg-red-500/5 text-left text-sm transition-colors mt-4" onclick="logout()">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lg:col-span-3">
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                                    <i data-lucide="package" class="w-5 h-5 text-gold"></i>
+                                </div>
+                                <p class="text-3xl font-bold text-midnight-navy dark:text-white">${State.orders.length}</p>
+                                <p class="text-midnight-navy/50 dark:text-white/50 text-sm">Total Orders</p>
+                            </div>
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                                    <i data-lucide="heart" class="w-5 h-5 text-green-500"></i>
+                                </div>
+                                <p class="text-3xl font-bold text-midnight-navy dark:text-white">${State.wishlist.length}</p>
+                                <p class="text-midnight-navy/50 dark:text-white/50 text-sm">Wishlist Items</p>
+                            </div>
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+                                    <i data-lucide="award" class="w-5 h-5 text-blue-500"></i>
+                                </div>
+                                <p class="text-3xl font-bold text-midnight-navy dark:text-white">VIP</p>
+                                <p class="text-midnight-navy/50 dark:text-white/50 text-sm">Member Status</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <h3 class="font-display text-lg font-bold text-midnight-navy dark:text-white mb-4">Recent Orders</h3>
+                            ${State.orders.length === 0 ? `
+                                <p class="text-midnight-navy/40 dark:text-white/40 text-center py-8">No orders yet</p>
+                            ` : `
+                                <div class="space-y-4">
+                                    ${State.orders.slice(0, 3).map(order => `
+                                        <div class="flex items-center justify-between p-4 bg-platinum dark:bg-midnight-navy rounded-xl">
+                                            <div>
+                                                <p class="text-midnight-navy dark:text-white font-medium text-sm">${order.id}</p>
+                                                <p class="text-midnight-navy/50 dark:text-white/50 text-xs">${new Date(order.date).toLocaleDateString()}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-gold font-semibold">${formatPrice(order.total)}</p>
+                                                <span class="px-2 py-0.5 bg-green-500/10 text-green-500 text-xs rounded-full">${order.status}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderOrdersPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+                <nav class="flex items-center gap-2 text-midnight-navy/40 dark:text-white/40 text-sm mb-8">
+                    <a href="#" class="hover:text-gold transition-colors" onclick="navigateTo('home'); return false;">Home</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span class="text-midnight-navy dark:text-white">Order History</span>
+                </nav>
+                
+                <h1 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-8">Order History</h1>
+                
+                ${State.orders.length === 0 ? `
+                    <div class="text-center py-20">
+                        <i data-lucide="package" class="w-16 h-16 text-midnight-navy/10 dark:text-white/10 mx-auto mb-4"></i>
+                        <p class="text-midnight-navy/40 dark:text-white/40 text-lg mb-2">No orders yet</p>
+                        <p class="text-midnight-navy/30 dark:text-white/30 text-sm mb-6">Your order history will appear here</p>
+                        <button class="px-8 py-3 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="navigateTo('shop')">Start Shopping</button>
+                    </div>
+                ` : `
+                    <div class="space-y-6">
+                        ${State.orders.map(order => `
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-6 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                    <div>
+                                        <p class="text-midnight-navy dark:text-white font-semibold">${order.id}</p>
+                                        <p class="text-midnight-navy/50 dark:text-white/50 text-sm">${new Date(order.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="px-3 py-1 bg-green-500/10 text-green-500 text-sm rounded-full">${order.status}</span>
+                                        <span class="text-gold font-bold">${formatPrice(order.total)}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+                                    ${order.items.map(item => `
+                                        <div class="flex-shrink-0 flex items-center gap-3 p-3 bg-platinum dark:bg-midnight-navy rounded-xl">
+                                            <img src="${item.image}" alt="${item.name}" class="w-12 h-16 object-cover rounded-lg">
+                                            <div>
+                                                <p class="text-midnight-navy dark:text-white text-sm font-medium">${item.name}</p>
+                                                <p class="text-midnight-navy/50 dark:text-white/50 text-xs">${item.color} / ${item.size}</p>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-midnight-navy/10 dark:border-white/10 flex items-center justify-between">
+                                    <p class="text-midnight-navy/50 dark:text-white/50 text-sm">Tracking: <span class="text-gold">${order.trackingNumber}</span></p>
+                                    <button class="text-gold text-sm hover:underline">Track Order</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+};
+'''
+
+with open(f"{base_dir}/app.js", "a") as f:
+    f.write(app_js_part5)
+
+print("app.js Part 5 created successfully!")
+print(f"Size: {len(app_js_part5)} characters")
+base_dir = "/mnt/agents/output/vezaraa"
+
+# Part 6: About, Blog, Contact, FAQ, Returns pages + Event Handlers + Init
+app_js_part6 = '''
+const renderAboutPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="relative h-[50vh] min-h-[400px] overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1920&q=80" alt="Atelier" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-midnight-navy/60"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-center px-4">
+                        <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Our Story</p>
+                        <h1 class="font-display text-5xl lg:text-7xl font-bold text-white mb-4">The Vezaraa Legacy</h1>
+                        <p class="text-white/70 text-lg max-w-2xl mx-auto">Redefining luxury for the modern era</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-20">
+                <div class="max-w-4xl mx-auto">
+                    <div class="grid md:grid-cols-2 gap-12 items-center mb-20">
+                        <div>
+                            <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Heritage</p>
+                            <h2 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-6">Born in Milan, Worn Worldwide</h2>
+                            <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed mb-4">
+                                Vezaraa was founded in 2018 with a singular vision: to create a luxury fashion house that bridges the gap between haute couture and urban street culture. Our atelier in Milan brings together master artisans who have spent decades perfecting their craft.
+                            </p>
+                            <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed">
+                                Every piece that bears the Vezaraa name is a testament to uncompromising quality, innovative design, and the belief that true luxury lies in the details.
+                            </p>
+                        </div>
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80" alt="Fashion" class="rounded-2xl w-full h-80 object-cover">
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-3 gap-8 mb-20">
+                        <div class="text-center p-8 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                            <div class="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="gem" class="w-8 h-8 text-gold"></i>
+                            </div>
+                            <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Premium Materials</h3>
+                            <p class="text-midnight-navy/60 dark:text-white/60 text-sm">Only the finest Italian leather, silk, and cashmere make the cut.</p>
+                        </div>
+                        <div class="text-center p-8 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                            <div class="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="scissors" class="w-8 h-8 text-gold"></i>
+                            </div>
+                            <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Artisan Craftsmanship</h3>
+                            <p class="text-midnight-navy/60 dark:text-white/60 text-sm">Hand-stitched by master artisans with decades of experience.</p>
+                        </div>
+                        <div class="text-center p-8 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                            <div class="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="leaf" class="w-8 h-8 text-gold"></i>
+                            </div>
+                            <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Sustainable Luxury</h3>
+                            <p class="text-midnight-navy/60 dark:text-white/60 text-sm">Committed to ethical sourcing and sustainable practices.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Our Values</p>
+                        <h2 class="font-display text-3xl lg:text-4xl font-bold text-midnight-navy dark:text-white mb-8">What We Stand For</h2>
+                        <div class="grid md:grid-cols-2 gap-8 text-left">
+                            <div class="p-6 border-l-2 border-gold">
+                                <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Innovation</h3>
+                                <p class="text-midnight-navy/60 dark:text-white/60">We constantly push boundaries, blending traditional techniques with cutting-edge technology to create fashion that is both timeless and forward-thinking.</p>
+                            </div>
+                            <div class="p-6 border-l-2 border-gold">
+                                <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Exclusivity</h3>
+                                <p class="text-midnight-navy/60 dark:text-white/60">Limited production runs ensure that every Vezaraa piece remains exclusive. We believe luxury should be rare, not mass-produced.</p>
+                            </div>
+                            <div class="p-6 border-l-2 border-gold">
+                                <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Authenticity</h3>
+                                <p class="text-midnight-navy/60 dark:text-white/60">Every product comes with a certificate of authenticity and a unique serial number, ensuring its provenance and value.</p>
+                            </div>
+                            <div class="p-6 border-l-2 border-gold">
+                                <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Community</h3>
+                                <p class="text-midnight-navy/60 dark:text-white/60">We are more than a brand. We are a community of individuals who appreciate the finer things and support each other in the pursuit of excellence.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderBlogPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="bg-midnight-navy py-16 lg:py-24">
+                <div class="w-full px-4 sm:px-6 lg:px-12 text-center">
+                    <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Journal</p>
+                    <h1 class="font-display text-4xl lg:text-6xl font-bold text-white mb-4">The Vezaraa Journal</h1>
+                    <p class="text-white/60 max-w-xl mx-auto">Stories, style guides, and behind-the-scenes looks at the world of luxury fashion.</p>
+                </div>
+            </div>
+            
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-16">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    ${BLOG_POSTS.map(post => `
+                        <article class="group">
+                            <div class="img-zoom-container rounded-2xl overflow-hidden mb-4">
+                                <img src="${post.image}" alt="${post.title}" class="w-full h-64 object-cover">
+                            </div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="text-gold text-xs uppercase tracking-wider font-medium">${post.category}</span>
+                                <span class="text-midnight-navy/30 dark:text-white/30">|</span>
+                                <span class="text-midnight-navy/40 dark:text-white/40 text-xs">${post.date}</span>
+                                <span class="text-midnight-navy/30 dark:text-white/30">|</span>
+                                <span class="text-midnight-navy/40 dark:text-white/40 text-xs">${post.readTime}</span>
+                            </div>
+                            <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white group-hover:text-gold transition-colors mb-2">${post.title}</h2>
+                            <p class="text-midnight-navy/60 dark:text-white/60 text-sm line-clamp-2 mb-4">${post.excerpt}</p>
+                            <button class="text-gold text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all">
+                                Read More <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </article>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderContactPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-16">
+                <div class="max-w-6xl mx-auto">
+                    <div class="text-center mb-16">
+                        <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Get in Touch</p>
+                        <h1 class="font-display text-4xl lg:text-5xl font-bold text-midnight-navy dark:text-white mb-4">Contact Us</h1>
+                        <p class="text-midnight-navy/60 dark:text-white/60 max-w-xl mx-auto">Our style consultants are here to help. Reach out for any inquiries.</p>
+                    </div>
+                    
+                    <div class="grid lg:grid-cols-2 gap-12">
+                        <div>
+                            <div class="grid sm:grid-cols-2 gap-6 mb-8">
+                                <div class="p-6 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                                    <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                                        <i data-lucide="mail" class="w-5 h-5 text-gold"></i>
+                                    </div>
+                                    <h3 class="text-midnight-navy dark:text-white font-semibold mb-1">Email</h3>
+                                    <p class="text-midnight-navy/60 dark:text-white/60 text-sm">concierge@vezaraa.com</p>
+                                </div>
+                                <div class="p-6 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                                    <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                                        <i data-lucide="phone" class="w-5 h-5 text-gold"></i>
+                                    </div>
+                                    <h3 class="text-midnight-navy dark:text-white font-semibold mb-1">Phone</h3>
+                                    <p class="text-midnight-navy/60 dark:text-white/60 text-sm">+1 (800) VEZARAA</p>
+                                </div>
+                                <div class="p-6 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                                    <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                                        <i data-lucide="map-pin" class="w-5 h-5 text-gold"></i>
+                                    </div>
+                                    <h3 class="text-midnight-navy dark:text-white font-semibold mb-1">Flagship Store</h3>
+                                    <p class="text-midnight-navy/60 dark:text-white/60 text-sm">Via Montenapoleone, 23<br>Milan, Italy</p>
+                                </div>
+                                <div class="p-6 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                                    <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                                        <i data-lucide="clock" class="w-5 h-5 text-gold"></i>
+                                    </div>
+                                    <h3 class="text-midnight-navy dark:text-white font-semibold mb-1">Hours</h3>
+                                    <p class="text-midnight-navy/60 dark:text-white/60 text-sm">Mon-Sat: 10AM - 8PM<br>Sun: 12PM - 6PM</p>
+                                </div>
+                            </div>
+                            
+                            <div class="rounded-2xl overflow-hidden h-64">
+                                <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80" alt="Milan" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <h2 class="font-display text-2xl font-bold text-midnight-navy dark:text-white mb-6">Send a Message</h2>
+                            <div class="space-y-4">
+                                <div class="grid sm:grid-cols-2 gap-4">
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">First Name</label>
+                                        <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="John"></div>
+                                    <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Last Name</label>
+                                        <input type="text" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="Doe"></div>
+                                </div>
+                                <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Email</label>
+                                    <input type="email" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50" placeholder="john@example.com"></div>
+                                <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Subject</label>
+                                    <select class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50">
+                                        <option>General Inquiry</option>
+                                        <option>Order Support</option>
+                                        <option>Product Question</option>
+                                        <option>Style Consultation</option>
+                                        <option>Partnership</option>
+                                    </select></div>
+                                <div><label class="text-midnight-navy/60 dark:text-white/60 text-sm mb-1 block">Message</label>
+                                    <textarea rows="5" class="w-full bg-platinum dark:bg-midnight-navy border border-midnight-navy/10 dark:border-white/10 rounded-lg px-4 py-3 text-midnight-navy dark:text-white focus:outline-none focus:border-gold/50 resize-none" placeholder="How can we help you?"></textarea></div>
+                                <button class="w-full py-4 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="showToast('Message sent successfully!');">
+                                    Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderFaqPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-16">
+                <div class="max-w-3xl mx-auto">
+                    <div class="text-center mb-16">
+                        <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Support</p>
+                        <h1 class="font-display text-4xl lg:text-5xl font-bold text-midnight-navy dark:text-white mb-4">Frequently Asked Questions</h1>
+                        <p class="text-midnight-navy/60 dark:text-white/60">Find answers to common questions about our products and services.</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${FAQS.map((faq, i) => `
+                            <div class="bg-white dark:bg-midnight-navy-light rounded-xl overflow-hidden shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                                <button class="w-full flex items-center justify-between p-6 text-left" onclick="toggleFaq(${i})">
+                                    <span class="text-midnight-navy dark:text-white font-medium pr-4">${faq.question}</span>
+                                    <i data-lucide="chevron-down" class="w-5 h-5 text-midnight-navy/40 dark:text-white/40 flex-shrink-0 transition-transform ${State.faqOpen === i ? 'rotate-180' : ''}"></i>
+                                </button>
+                                <div class="px-6 pb-6 ${State.faqOpen === i ? '' : 'hidden'}">
+                                    <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed">${faq.answer}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="mt-12 text-center p-8 bg-platinum dark:bg-midnight-navy-light rounded-2xl">
+                        <h3 class="font-display text-xl font-bold text-midnight-navy dark:text-white mb-2">Still have questions?</h3>
+                        <p class="text-midnight-navy/60 dark:text-white/60 mb-4">Our concierge team is available 24/7 to assist you.</p>
+                        <button class="px-8 py-3 bg-gold text-midnight-navy font-bold rounded-full hover:bg-gold-light transition-colors" onclick="navigateTo('contact')">Contact Us</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const renderReturnsPage = () => {
+    return `
+        <div class="page-transition page-active pt-20 lg:pt-24">
+            <div class="w-full px-4 sm:px-6 lg:px-12 py-16">
+                <div class="max-w-3xl mx-auto">
+                    <div class="text-center mb-16">
+                        <p class="text-gold text-sm uppercase tracking-[0.3em] mb-3">Policies</p>
+                        <h1 class="font-display text-4xl lg:text-5xl font-bold text-midnight-navy dark:text-white mb-4">Returns & Refunds</h1>
+                        <p class="text-midnight-navy/60 dark:text-white/60">We want you to love your purchase. Here is everything you need to know.</p>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
+                                    <i data-lucide="calendar" class="w-6 h-6 text-gold"></i>
+                                </div>
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white">Return Window</h2>
+                            </div>
+                            <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed">We offer a complimentary 30-day return window from the date of delivery. Items must be unworn, unwashed, and in their original packaging with all tags attached. Limited edition items are eligible for exchange only.</p>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
+                                    <i data-lucide="refresh-cw" class="w-6 h-6 text-gold"></i>
+                                </div>
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white">How to Return</h2>
+                            </div>
+                            <ol class="space-y-3 text-midnight-navy/70 dark:text-white/70">
+                                <li class="flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-sm font-bold flex-shrink-0">1</span><span>Log into your account and go to Order History</span></li>
+                                <li class="flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-sm font-bold flex-shrink-0">2</span><span>Select the order and items you wish to return</span></li>
+                                <li class="flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-sm font-bold flex-shrink-0">3</span><span>Print the prepaid return label</span></li>
+                                <li class="flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-sm font-bold flex-shrink-0">4</span><span>Pack the items securely and attach the label</span></li>
+                                <li class="flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-sm font-bold flex-shrink-0">5</span><span>Drop off at any authorized shipping location</span></li>
+                            </ol>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-midnight-navy-light rounded-2xl p-8 shadow-sm border border-midnight-navy/5 dark:border-white/5">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
+                                    <i data-lucide="credit-card" class="w-6 h-6 text-gold"></i>
+                                </div>
+                                <h2 class="font-display text-xl font-bold text-midnight-navy dark:text-white">Refund Process</h2>
+                            </div>
+                            <p class="text-midnight-navy/70 dark:text-white/70 leading-relaxed">Refunds are processed within 5-7 business days after we receive your return. The refund will be issued to your original payment method. You will receive an email confirmation once the refund has been processed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+'''
+
+with open(f"{base_dir}/app.js", "a") as f:
+    f.write(app_js_part6)
+
+print("app.js Part 6 created successfully!")
+print(f"Size: {len(app_js_part6)} characters")
+base_dir = "/mnt/agents/output/vezaraa"
+
+# Part 7: Event Handlers and Initialization
+app_js_part7 = '''
+// ============================================
+// EVENT HANDLERS
+// ============================================
+window.navigateTo = (page, params = {}) => {
+    State.currentPage = page;
+    State.scrollY = 0;
+    window.scrollTo(0, 0);
+    
+    if (page === 'product' && params.id) {
+        State.currentProduct = getProductById(params.id);
+        State.selectedColor = State.currentProduct?.colors[0] || null;
+        State.selectedSize = null;
+        State.productImageIndex = 0;
+        State.activeTab = 'description';
+    }
+    
+    if (page === 'shop') {
+        if (params.category) State.filters.category = params.category;
+        if (params.subcategory) {
+            State.filters.category = 'all';
+            State.searchQuery = '';
+        }
+    }
+    
+    if (page === 'home') {
+        State.filters.category = 'all';
+        State.searchQuery = '';
+    }
+    
+    renderApp();
+};
+
+window.toggleCart = () => {
+    State.isCartOpen = !State.isCartOpen;
+    renderApp();
+};
+
+window.toggleSearch = () => {
+    State.isSearchOpen = !State.isSearchOpen;
+    if (!State.isSearchOpen) State.searchQuery = '';
+    renderApp();
+    if (State.isSearchOpen) {
+        setTimeout(() => document.getElementById('search-input')?.focus(), 100);
+    }
+};
+
+window.handleSearch = (value) => {
+    State.searchQuery = value;
+    renderApp();
+};
+
+window.showMegaMenu = (category) => {
+    State.isMegaMenuOpen = true;
+    State.megaMenuCategory = category;
+    renderApp();
+};
+
+window.hideMegaMenu = () => {
+    setTimeout(() => {
+        if (!document.querySelector('#mega-menu:hover')) {
+            State.isMegaMenuOpen = false;
+            renderApp();
+        }
+    }, 100);
+};
+
+window.keepMegaMenuOpen = () => {
+    State.isMegaMenuOpen = true;
+};
+
+window.toggleLogin = () => {
+    State.isLoginOpen = !State.isLoginOpen;
+    renderApp();
+};
+
+window.showSignupForm = () => {
+    document.getElementById('login-form-container').classList.add('hidden');
+    document.getElementById('signup-form-container').classList.remove('hidden');
+};
+
+window.showLoginForm = () => {
+    document.getElementById('signup-form-container').classList.add('hidden');
+    document.getElementById('login-form-container').classList.remove('hidden');
+};
+
+window.handleLogin = () => {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    if (email && password) {
+        State.user = { name: email.split('@')[0], email };
+        saveState();
+        showToast('Welcome back!');
+        toggleLogin();
+        renderApp();
+    } else {
+        showToast('Please fill in all fields', 'error');
+    }
+};
+
+window.handleSignup = () => {
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    if (name && email && password) {
+        State.user = { name, email };
+        saveState();
+        showToast('Account created successfully!');
+        toggleLogin();
+        renderApp();
+    } else {
+        showToast('Please fill in all fields', 'error');
+    }
+};
+
+window.logout = () => {
+    State.user = null;
+    saveState();
+    showToast('Signed out successfully');
+    renderApp();
+};
+
+window.toggleDarkMode = () => {
+    State.darkMode = !State.darkMode;
+    saveState();
+    renderApp();
+};
+
+window.toggleMobileMenu = () => {
+    State.mobileMenuOpen = !State.mobileMenuOpen;
+    renderApp();
+};
+
+window.setHeroSlide = (index) => {
+    State.heroSlide = index;
+    renderApp();
+};
+
+window.setProductImage = (index) => {
+    State.productImageIndex = index;
+    renderApp();
+};
+
+window.selectColor = (color) => {
+    State.selectedColor = color;
+    renderApp();
+};
+
+window.selectSize = (size) => {
+    State.selectedSize = size;
+    renderApp();
+};
+
+window.enableZoom = () => {
+    State.isZoomed = true;
+};
+
+window.disableZoom = () => {
+    State.isZoomed = false;
+    renderApp();
+};
+
+window.handleZoom = (e, img) => {
+    const rect = img.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    State.zoomPosition = { x, y };
+    img.style.transformOrigin = `${x}% ${y}%`;
+};
+
+window.toggle360View = () => {
+    State.is360View = !State.is360View;
+    showToast(State.is360View ? '360° View enabled (drag to rotate)' : 'Standard view');
+    renderApp();
+};
+
+window.setActiveTab = (tab) => {
+    State.activeTab = tab;
+    renderApp();
+};
+
+window.showSizeGuide = () => {
+    showToast('Size guide opened (simulated)');
+};
+
+window.addProductToCart = () => {
+    const product = State.currentProduct;
+    if (!product) return;
+    const color = State.selectedColor?.name || product.colors[0].name;
+    const size = State.selectedSize || product.sizesAvailable[0];
+    if (!size) {
+        showToast('Please select a size', 'error');
+        return;
+    }
+    addToCart(product, color, size, 1);
+};
+
+window.buyNow = () => {
+    addProductToCart();
+    navigateTo('checkout');
+};
+
+window.setCategory = (category) => {
+    State.filters.category = category;
+    renderApp();
+};
+
+window.setSortBy = (sortBy) => {
+    State.filters.sortBy = sortBy;
+    renderApp();
+};
+
+window.setPriceRange = (min, max) => {
+    State.filters.priceRange = [min, parseInt(max)];
+    renderApp();
+};
+
+window.toggleSizeFilter = (size) => {
+    const index = State.filters.sizes.indexOf(size);
+    if (index >= 0) {
+        State.filters.sizes.splice(index, 1);
+    } else {
+        State.filters.sizes.push(size);
+    }
+    renderApp();
+};
+
+window.resetFilters = () => {
+    State.filters = {
+        category: 'all',
+        priceRange: [0, 5000],
+        sizes: [],
+        colors: [],
+        sortBy: 'featured',
+    };
+    State.searchQuery = '';
+    renderApp();
+};
+
+window.setShippingMethod = (method) => {
+    State.shippingMethod = method;
+    renderApp();
+};
+
+window.setPaymentMethod = (method) => {
+    State.paymentMethod = method;
+    renderApp();
+};
+
+window.nextCheckoutStep = () => {
+    if (State.checkoutStep < 3) {
+        State.checkoutStep++;
+        renderApp();
+    }
+};
+
+window.prevCheckoutStep = () => {
+    if (State.checkoutStep > 1) {
+        State.checkoutStep--;
+        renderApp();
+    }
+};
+
+window.completeOrder = () => {
+    const shippingDetails = {
+        firstName: document.getElementById('ship-firstname')?.value || 'John',
+        lastName: document.getElementById('ship-lastname')?.value || 'Doe',
+        email: document.getElementById('ship-email')?.value || 'john@example.com',
+        address: document.getElementById('ship-address')?.value || '123 Fashion Street',
+        city: document.getElementById('ship-city')?.value || 'New York',
+    };
+    const order = placeOrder(shippingDetails);
+    State.checkoutStep = 1;
+    showToast(`Order ${order.id} placed successfully!`);
+    navigateTo('orders');
+};
+
+window.closeNewsletter = () => {
+    State.isNewsletterOpen = false;
+    localStorage.setItem('vezaraa_newsletter_closed', 'true');
+    renderApp();
+};
+
+window.handleNewsletterSignup = () => {
+    const email = document.getElementById('newsletter-email')?.value;
+    if (email) {
+        showToast('Welcome to the Inner Circle! Check your inbox for 15% off.');
+        closeNewsletter();
+    } else {
+        showToast('Please enter a valid email', 'error');
+    }
+};
+
+window.toggleFaq = (index) => {
+    State.faqOpen = State.faqOpen === index ? null : index;
+    renderApp();
+};
+
+window.changeCurrency = (code) => {
+    const currency = CURRENCIES.find(c => c.code === code);
+    if (currency) {
+        State.currency = currency;
+        saveState();
+        renderApp();
+    }
+};
+
+// ============================================
+// ANIMATIONS
+// ============================================
+const initAnimations = () => {
+    if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+        gsap.registerPlugin(ScrollTrigger);
+        
+        gsap.utils.toArray('.collection-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: { trigger: card, start: 'top 85%', toggleActions: 'play none none none' },
+                y: 60, opacity: 0, duration: 0.8, delay: i * 0.1, ease: 'power3.out'
+            });
+        });
+        
+        gsap.utils.toArray('.product-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: { trigger: card, start: 'top 90%', toggleActions: 'play none none none' },
+                y: 40, opacity: 0, duration: 0.6, delay: i * 0.05, ease: 'power3.out'
+            });
+        });
+    }
+};
+
+// ============================================
+// SCROLL HANDLER
+// ============================================
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    State.scrollY = window.scrollY;
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+        const navbar = document.getElementById('navbar');
+        if (navbar) {
+            if (State.scrollY > 50) {
+                navbar.classList.add('bg-midnight-navy/95', 'backdrop-blur-xl', 'shadow-lg');
+                navbar.classList.remove('bg-transparent');
+            } else {
+                navbar.classList.remove('bg-midnight-navy/95', 'backdrop-blur-xl', 'shadow-lg');
+                navbar.classList.add('bg-transparent');
+            }
+        }
+    }, 10);
+});
+
+// ============================================
+// ATTACH EVENT LISTENERS
+// ============================================
+const attachEventListeners = () => {
+    // Hero auto-slide
+    if (State.currentPage === 'home') {
+        setInterval(() => {
+            if (State.currentPage === 'home') {
+                State.heroSlide = (State.heroSlide + 1) % HERO_SLIDES.length;
+                const title = document.querySelector('h1');
+                if (title) renderApp();
+            }
+        }, 6000);
+    }
+};
+
+// ============================================
+// INITIALIZATION
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Show newsletter popup after 5 seconds
+    setTimeout(() => {
+        if (!localStorage.getItem('vezaraa_newsletter_closed')) {
+            State.isNewsletterOpen = true;
+            renderApp();
+        }
+    }, 5000);
+    
+    renderApp();
+});
+
+// Handle ESC key
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (State.isSearchOpen) toggleSearch();
+        if (State.isCartOpen) toggleCart();
+        if (State.isLoginOpen) toggleLogin();
+        if (State.isNewsletterOpen) closeNewsletter();
+        if (State.mobileMenuOpen) toggleMobileMenu();
+    }
+});
+'''
+
+with open(f"{base_dir}/app.js", "a") as f:
+    f.write(app_js_part7)
+
+print("app.js Part 7 created successfully!")
+print(f"Size: {len(app_js_part7)} characters")
+
+# Now let's check the total size
+import os
+total_size = os.path.getsize(f"{base_dir}/app.js")
+print(f"\nTotal app.js size: {total_size} bytes ({total_size/1024:.1f} KB)")
